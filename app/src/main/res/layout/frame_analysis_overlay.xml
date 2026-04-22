@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <!-- 顶部标题区域 -->
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="帧级分析可视化"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#2196F3"
+        android:textColor="@android:color/white"
+        android:layout_alignParentTop="true"/>
+
+    <!-- 选中帧信息 -->
+    <TextView
+        android:id="@+id/selectedFrameInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="当前选中帧: 无"
+        android:textSize="14sp"
+        android:background="#E3F2FD"
+        android:padding="12dp"
+        android:textColor="#1976D2"
+        android:layout_below="@id/titleTextView"/>
+
+    <!-- 帧列表控制 -->
+    <LinearLayout
+        android:id="@+id/controlLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#EEEEEE"
+        android:layout_below="@id/selectedFrameInfo">
+
+        <Button
+            android:id="@+id/btnPrevFrames"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="上一批"
+            android:textColor="@android:color/white"
+            android:background="#FF9800"/>
+
+        <Button
+            android:id="@+id/btnShowFirst10"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="显示前10帧"
+            android:textColor="@android:color/white"
+            android:background="#4CAF50"/>
+
+        <Button
+            android:id="@+id/btnNextFrames"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="下一批"
+            android:textColor="@android:color/white"
+            android:background="#FF9800"/>
+
+    </LinearLayout>
+
+    <!-- 帧列表标题 -->
+    <TextView
+        android:id="@+id/frameListTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="帧详细数据"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:padding="12dp"
+        android:background="#E8E8E8"
+        android:layout_below="@id/controlLayout"/>
+
+    <!-- 关闭按钮固定在底部 -->
+    <Button
+        android:id="@+id/btnCloseFrameAnalysis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="关闭帧分析"
+        android:textSize="16sp"
+        android:textColor="@android:color/white"
+        android:background="#F44336"
+        android:layout_alignParentBottom="true"/>
+
+    <!-- 帧列表（在标题和关闭按钮之间） -->
+    <ListView
+        android:id="@+id/frameListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/frameListTitle"
+        android:layout_above="@id/btnCloseFrameAnalysis"
+        android:background="@android:color/white"
+        android:divider="#E0E0E0"
+        android:dividerHeight="1dp"/>
+
+</RelativeLayout>

@@ -1,0 +1,48 @@
+<!-- colors.xml -->
+<resources>
+    <!-- 主品牌色 - 顶部导航栏的蓝色 -->
+    <color name="brand_primary">#2563EB</color>
+    <color name="brand_primary_dark">#1D4ED8</color>
+    <color name="brand_primary_light">#60A5FA</color>
+
+    <!-- 品牌渐变（顶部背景） -->
+    <color name="brand_gradient_start">#3B82F6</color>
+    <color name="brand_gradient_end">#2563EB</color>
+    <!-- 深蹲训练 - 蓝色系 -->
+    <color name="category_fitness">#3B82F6</color>
+    <color name="category_fitness_bg">#DBEAFE</color>
+
+    <!-- 拳击 - 红色系 -->
+    <color name="category_boxing">#EF4444</color>
+    <color name="category_boxing_bg">#FEE2E2</color>
+    <color name="red">#FF0000</color>
+
+    <!-- 瑜伽 - 紫色系 -->
+    <color name="category_yoga">#A855F7</color>
+    <color name="category_yoga_bg">#F3E8FF</color>
+
+    <!-- 有氧运动 - 绿色系 -->
+    <color name="category_cardio">#22C55E</color>
+    <color name="category_cardio_bg">#DCFCE7</color>
+
+    <!-- 其他预留 -->
+    <color name="category_strength">#F97316</color>
+    <color name="category_strength_bg">#FFEDD5</color>
+    <!-- 文字 -->
+    <color name="text_primary">#111827</color>      <!-- 标题：体能训练 -->
+    <color name="text_tertiary">#9CA3AF</color>     <!-- 辅助：4个动作 -->
+    <color name="text_white">#FFFFFF</color>        <!-- 导航栏文字 -->
+
+    <!-- 背景 -->
+    <color name="background_page">#F3F4F6</color>   <!-- 页面背景灰 -->
+    <color name="background_card">#FFFFFF</color>   <!-- 卡片白 -->
+    <color name="background_search">#FFFFFF</color> <!-- 搜索框 -->
+
+    <!-- 分割线 -->
+    <color name="divider">#E5E7EB</color>
+
+    <color name="nav_active">#2563EB</color>        <!-- 选中：首页 -->
+    <color name="nav_inactive">#9CA3AF</color>      <!-- 未选中：记录、我的 -->
+    <color name="nav_background">#FFFFFF</color>
+    <color name="white">#FFFFFF</color>
+</resources>

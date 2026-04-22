@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 圆角：按钮边角圆润度，数值越大越圆 -->
+    <corners android:radius="20dp" />
+
+    <!-- 渐变核心：修改这里的颜色值改变按钮外观 -->
+    <gradient
+        android:startColor="@color/brand_primary_light"
+    android:endColor="@color/category_cardio"
+    android:angle="0" />
+
+    <!-- 按钮边框：可选，不加则无边界 -->
+    <stroke
+        android:width="1dp"
+        android:color="@color/text_tertiary" />      <!-- 边框色：更深的橙色 -->
+</shape>

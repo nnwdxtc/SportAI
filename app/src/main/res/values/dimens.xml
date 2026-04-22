@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基础单位 -->
+    <dimen name="space_4">4dp</dimen>
+    <dimen name="space_8">8dp</dimen>
+    <dimen name="space_12">12dp</dimen>
+    <dimen name="space_16">16dp</dimen>
+    <dimen name="space_20">20dp</dimen>
+    <dimen name="space_24">24dp</dimen>
+    <dimen name="space_32">32dp</dimen>
+
+    <!-- 页面边距 -->
+    <dimen name="page_padding_horizontal">@dimen/space_16</dimen>
+    <dimen name="page_padding_vertical">@dimen/space_16</dimen>
+
+    <!-- 顶部导航栏 -->
+    <dimen name="header_height">180dp</dimen>
+    <dimen name="header_title_size">28sp</dimen>
+    <dimen name="header_subtitle_size">14sp</dimen>
+
+    <!-- 搜索框 -->
+    <dimen name="search_height">48dp</dimen>
+    <dimen name="search_corner_radius">24dp</dimen>
+    <dimen name="search_margin_horizontal">@dimen/space_16</dimen>
+    <dimen name="search_margin_top">-24dp</dimen>  <!-- 负值覆盖 -->
+
+    <!-- 分类卡片 -->
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_padding">@dimen/space_16</dimen>
+    <dimen name="card_icon_size">48dp</dimen>
+    <dimen name="card_icon_corner_radius">12dp</dimen>
+    <dimen name="card_gap">@dimen/space_12</dimen>
+
+    <!-- 底部导航 -->
+    <dimen name="nav_height">64dp</dimen>
+    <dimen name="nav_icon_size">24dp</dimen>
+
+    <dimen name="text_headline">24sp</dimen>        <!-- 运动助手 -->
+    <dimen name="text_title">18sp</dimen>           <!-- 体能训练 -->
+    <dimen name="text_body">14sp</dimen>            <!-- 描述文字 -->
+    <dimen name="text_caption">12sp</dimen>         <!-- 4个动作 -->
+    <dimen name="text_nav">12sp</dimen>             <!-- 首页/记录/我的 -->
+</resources>
