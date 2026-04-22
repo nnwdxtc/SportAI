@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Frame Analysis Item IDs -->
+    <item type="id" name="tvFrameIndex" />
+    <item type="id" name="tvIsSelected" />
+    <item type="id" name="tvKneeInfo" />
+    <item type="id" name="tvHipInfo" />
+    <item type="id" name="tvSimilarity" />
+    <item type="id" name="pbSimilarity" />
+    <item type="id" name="tvSimilarityDetails" />
+    <item type="id" name="tvSelectionReason" />
+
+    <!-- Visualization IDs -->
+    <item type="id" name="visualizationInfo" />
+    <item type="id" name="comparisonGraph" />
+    <item type="id" name="comparisonDetails" />
+    <item type="id" name="btnRefreshChart" />
+    <item type="id" name="btnCloseVisualization" />
+
+    <!-- Frame Analysis IDs -->
+    <item type="id" name="selectedFrameInfo" />
+    <item type="id" name="frameComparisonChart" />
+    <item type="id" name="frameSimilarityInfo" />
+    <item type="id" name="similarityBarsContainer" />
+    <item type="id" name="frameListTitle" />
+    <item type="id" name="frameListView" />
+    <item type="id" name="btnPrevFrames" />
+    <item type="id" name="btnShowFirst10" />
+    <item type="id" name="btnNextFrames" />
+    <item type="id" name="btnCloseFrameAnalysis" />
+    <item type="id" name="visualizationContainer" />
+    <item type="id" name="toggleVisualizationButton" />
+    <item type="id" name="toggleFrameAnalysisButton" />
+    <item type="id" name="validateButton" />
+</resources>

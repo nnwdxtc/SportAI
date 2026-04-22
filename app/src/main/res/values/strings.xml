@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">智能教练</string>
+    <string name="report_action">动作：--</string>
+    <string name="report_duration">时长：--</string>
+    <string name="report_similarity">平均相似度：--</string>
+    <string name="report_poses">有效帧：--</string>
+    <string name="report_count">深蹲次数：--</string>
+</resources>

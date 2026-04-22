@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    tools:context="com.example.myapplication.NonRealtimeActivity">
+
+    <!-- 顶部工具栏 -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/back_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/white"
+        android:elevation="4dp"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:contentInsetStartWithNavigation="0dp"
+        app:title="非实时比对"
+        app:titleTextColor="#333333"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <!-- 主内容区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- 上传视频区域（上半部分） -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- 视频播放器 -->
+                <com.google.android.exoplayer2.ui.PlayerView
+                    android:id="@+id/uploadPlayerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:use_controller="true"
+                    app:show_buffering="when_playing" />
+
+                <!-- 骨骼点覆盖层 -->
+                <com.example.myapplication.PixelPerfectOverlayView
+                    android:id="@+id/uploadOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+
+
+                <!-- 视频占位符（未上传时显示） -->
+                <LinearLayout
+                    android:id="@+id/uploadPlaceholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="#2C3E50"
+                    android:visibility="visible">
+
+                    <ImageView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/ic_upload"
+                        android:alpha="0.8"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="上传比对视频"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="点击底部按钮选择视频"
+                        android:textColor="#B0BEC5"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- 处理进度遮罩 -->
+                <LinearLayout
+                    android:id="@+id/uploadProgressOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="#E6000000"
+                    android:visibility="gone">
+
+                    <ProgressBar
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:indeterminateTint="#2563EB" />
+
+                    <TextView
+                        android:id="@+id/uploadProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="处理上传视频..."
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <ProgressBar
+                        android:id="@+id/uploadProgressBar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="280dp"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="16dp"
+                        android:progress="0" />
+
+                    <TextView
+                        android:id="@+id/uploadProgressPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="0%"
+                        android:textColor="#2563EB"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 视频标签 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="16dp"
+                    android:text="用户视频"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:background="#80000000"
+                    android:paddingVertical="8dp"
+                    android:paddingHorizontal="12dp" />
+            </FrameLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- 标准视频区域（下半部分） -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- 视频播放器 -->
+                <com.google.android.exoplayer2.ui.PlayerView
+                    android:id="@+id/standardPlayerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:use_controller="true"
+                    app:show_buffering="when_playing" />
+
+                <!-- 骨骼点覆盖层 -->
+                <com.example.myapplication.PixelPerfectOverlayView
+                    android:id="@+id/standardOverlayView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+
+
+                <!-- 视频占位符（未选择时显示） -->
+                <LinearLayout
+                    android:id="@+id/standardPlaceholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="#34495E"
+                    android:visibility="visible">
+
+                    <ImageView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/ic_video"
+                        android:alpha="0.8"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="标准示范视频"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="点击底部按钮选择视频"
+                        android:textColor="#B0BEC5"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- 处理进度遮罩 -->
+                <LinearLayout
+                    android:id="@+id/standardProgressOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="#E6000000"
+                    android:visibility="gone">
+
+                    <ProgressBar
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:indeterminateTint="#2563EB" />
+
+                    <TextView
+                        android:id="@+id/standardProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="处理标准视频..."
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <ProgressBar
+                        android:id="@+id/standardProgressBar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="280dp"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="16dp"
+                        android:progress="0" />
+
+                    <TextView
+                        android:id="@+id/standardProgressPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="0%"
+                        android:textColor="#2563EB"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 视频标签 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="16dp"
+                    android:text="标准视频"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:background="#80000000"
+                    android:paddingVertical="8dp"
+                    android:paddingHorizontal="12dp" />
+            </FrameLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+    <!-- 相似度信息卡片 -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <!-- 生成报告浮动按钮 -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_generate_report"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="2dp"
+            android:contentDescription="生成分析报告"
+            android:src="@drawable/ic_assessment"
+            app:backgroundTint="#2196F3"
+            app:tint="#FFFFFF" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="相似度"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/similarityView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--%"
+                    android:textColor="#2563EB"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="12dp"
+                android:background="#E0E0E0" />
+
+            <TextView
+                android:id="@+id/similarityBreakdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="等待比对结果..."
+                android:textSize="13sp"
+                android:textColor="#888888"
+                android:lineSpacingExtra="4dp" />
+
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 底部操作栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="#FFFFFF"
+        android:elevation="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/upload_video_button"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="上传视频"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="28dp"
+            app:backgroundTint="#2563EB"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/select_standard_video_button"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="8dp"
+            android:text="标准视频"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="28dp"
+            app:backgroundTint="#4CAF50"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/start_compare_button"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="开始比对"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="28dp"
+            app:backgroundTint="#FF5722"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

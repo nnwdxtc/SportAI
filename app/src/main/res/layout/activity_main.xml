@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.myapplication.RealtimeActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/back_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/transparent"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:contentInsetStartWithNavigation="0dp"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <!-- 主内容区域（摄像头+视频） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:weightSum="2">
+
+        <!-- 摄像头预览区域 -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="动作示范"
+                android:textAlignment="center"
+                android:textColor="@android:color/black"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="30dp">
+
+                <com.google.android.exoplayer2.ui.PlayerView
+                    android:id="@+id/exoPlayerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:use_controller="false" />
+
+                <com.example.myapplication.PixelPerfectOverlayView
+                    android:id="@+id/videoOverlayView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- 静止状态提示布局 -->
+                <LinearLayout
+                    android:id="@+id/staticHintLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:background="#80FF9800"
+                    android:visibility="gone"
+                    android:layout_gravity="bottom"
+                    android:layout_marginBottom="100dp">
+
+                    <TextView
+                        android:id="@+id/staticHintView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="未检测到运动，请开始深蹲动作"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/staticHintDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="角度变化小于5°，持续2秒以上"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/videoControlPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="end"
+                    android:padding="8dp"
+                    android:background="#80000000"
+                    >
+
+                    <Button
+                        android:id="@+id/btn_playback_speed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="倍速功能"
+                        android:textColor="@android:color/white"
+                        android:background="@drawable/gradient_button"
+                        app:backgroundTint="@null" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/videoProgressOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="#CCFFFFFF"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/videoProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="正在处理视频..."
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="16dp" />
+
+                    <ProgressBar
+                        android:id="@+id/videoProgressBar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="280dp"
+                        android:layout_height="20dp"
+                        android:progress="0" />
+
+                    <TextView
+                        android:id="@+id/videoProgressPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginTop="8dp" />
+
+                </LinearLayout>
+            </FrameLayout>
+
+
+
+
+
+
+
+
+
+        </RelativeLayout>
+
+        <!-- 按钮区域 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <Button
+                android:id="@+id/select_video_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="选择标准视频"
+                android:textColor="@android:color/white"
+                android:background="@drawable/gradient_button"
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/btn_generate_report"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="生成分析报告"
+                android:textColor="@android:color/white"
+                android:background="@drawable/gradient_button"
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/validateButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="验证比对"
+                android:textColor="@android:color/white"
+                android:background="@drawable/gradient_button"
+                app:backgroundTint="@null"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- 示范视频区域 -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp">
+
+
+
+            <androidx.camera.view.PreviewView
+                android:id="@+id/viewFinder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <com.example.myapplication.OverlayView
+                android:id="@+id/overlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- 倒计时文本 -->
+            <TextView
+                android:id="@+id/countdownText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:textSize="120sp"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:shadowColor="@android:color/black"
+                android:shadowRadius="5"
+                />
+
+            <!-- 调整摄像头按钮位置到右上角 -->
+            <ImageButton
+                android:id="@+id/switch_camera_button"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:background="@drawable/ic_camera_switch"
+                android:contentDescription="切换摄像头" />
+
+            <!-- 角度显示放在摄像头按钮下方 -->
+            <TextView
+                android:id="@+id/angleView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/switch_camera_button"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="20dp"
+                android:background="#80000000"
+                android:padding="12dp"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:text="膝: --° / --°\n髋: --° / --°"
+                android:lineSpacingExtra="2sp" />
+
+            <!-- 深蹲计数 -->
+            <TextView
+                android:id="@+id/squatCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:layout_margin="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
+    <!-- 底部按钮区域：选择视频 + 生成报告 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#F0F0F0">
+
+
+        <Button
+            android:id="@+id/start_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="开始运动"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/gradient_button"
+            app:backgroundTint="@null" />
+
+        <Button
+            android:id="@+id/toggleVisualizationButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="显示比对图"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/gradient_button"
+            app:backgroundTint="@null"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/toggleFrameAnalysisButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="显示帧分析"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/gradient_button"
+            app:backgroundTint="@null"
+            />
+
+
+    </LinearLayout>
+
+    <!-- 可视化布局容器（动态加载） -->
+    <FrameLayout
+        android:id="@+id/visualizationContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0" />
+
+</LinearLayout>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/visualizationLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@android:color/white"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/visualizationInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="实时比对可视化"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#4CAF50"
+        android:textColor="@android:color/white"/>
+
+    <ImageView
+        android:id="@+id/comparisonGraph"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:background="@android:color/white"
+        android:scaleType="fitXY"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/comparisonDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="角度对比详情"
+        android:textSize="14sp"
+        android:padding="12dp"
+        android:background="#F5F5F5"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp">
+
+        <Button
+            android:id="@+id/btnRefreshChart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="刷新图表"
+            android:textColor="@android:color/white"
+            android:background="#2196F3"/>
+
+        <Button
+            android:id="@+id/btnCloseVisualization"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="关闭可视化"
+            android:textColor="@android:color/white"
+            android:background="#F44336"
+            android:layout_marginStart="16dp"/>
+    </LinearLayout>
+
+</LinearLayout>
