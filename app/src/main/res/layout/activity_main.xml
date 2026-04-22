@@ -98,14 +98,7 @@
                     android:background="#80000000"
                     >
 
-                    <Button
-                        android:id="@+id/btn_playback_speed"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="倍速功能"
-                        android:textColor="@android:color/white"
-                        android:background="@drawable/gradient_button"
-                        app:backgroundTint="@null" />
+
                 </LinearLayout>
 
                 <LinearLayout
