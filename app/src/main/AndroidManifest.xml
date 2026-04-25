@@ -53,8 +53,8 @@
         tools:targetApi="33">
 
         <activity
-            android:name="com.example.myapplication.appcoveer"
-            android:exported="true" >
+            android:name="com.example.myapplication.SDKRealTimeActivity"
+            android:exported="true" >  <!-- appcoveer -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -66,9 +66,6 @@
             android:name="com.example.myapplication.Initial_activity"
             android:exported="false"/>
         <activity android:name="com.example.myapplication.ReportDetailActivity" />
-        <activity
-            android:name="com.example.myapplication.HomeActivity"
-            android:exported="false" />
         <activity
             android:name="com.example.myapplication.RealtimeActivity"
             android:exported="false"
@@ -86,14 +83,16 @@
             android:exported="false" />
         <activity
             android:name="com.example.myapplication.activity_action_detail" />
-        <activity
-            android:name="com.example.myapplication.activity_realtime" />
+
         <activity
             android:name="com.example.myapplication.LoginActivity" />
         <activity
             android:name="com.example.myapplication.RegisterActivity"
             android:exported="false"/>
-
+<!--        <activity-->
+<!--            android:name="com.example.myapplication.SDKRealtimeActivity"-->
+<!--            android:exported="true"-->
+<!--            android:label="SDK测试" />-->
 
 
         <!-- FileProvider for sharing PDF -->

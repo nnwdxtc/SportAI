@@ -4,21 +4,21 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 import androidx.annotation.NonNull;
+
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
-import java.util.List;
+
 import java.util.Arrays;
+import java.util.List;
 
 public class OverlayView extends View {
     private static final float LANDMARK_STROKE_WIDTH = 4f;
     private static final float CONNECTION_STROKE_WIDTH = 6f;
     private static final float TEXT_SIZE = 40f;
     private static final float LARGE_TEXT_SIZE = 80f;
-    private static final float TEXT_MARGIN = 30f;
     private int rotationDegrees = 90;
     private boolean isFrontCamera = false;
     private PoseLandmarkerResult poseResults;
@@ -38,6 +38,8 @@ public class OverlayView extends View {
     private int squatCount = 0;
     private float similarityScore = 0f;
 
+    // 新增：直接从SDK接收的骨架数据
+    private List<NormalizedLandmark> directLandmarks;
 
     private static final int[][] POSE_CONNECTIONS = {
             {0, 1}, {1, 2}, {2, 3}, {3, 7}, {0, 4}, {4, 5}, {5, 6}, {6, 8},
@@ -49,52 +51,44 @@ public class OverlayView extends View {
             {11, 12}, {23, 24}
     };
 
-    // 全身关键点检测相关 - 手肘索引（13=左肘，14=右肘）
+    // 全身关键点检测相关
     private static final int[] REQUIRED_LANDMARK_INDICES = {
-            11, 12, // 左肩、右肩
-            13, 14, // 左肘、右肘
-            23, 24, // 左髋、右髋
-            25, 26, // 左膝、右膝
-            27, 28  // 左踝、右踝
+            11, 12, 13, 14, 23, 24, 25, 26, 27, 28
     };
     private static final float MIN_VISIBILITY_THRESHOLD = 0.5f;
 
-    // 主要关键点定义（手肘到主要关节数组）
     private static final int[] LEFT_SIDE_MAJOR_JOINTS = {
-            11, // 左肩
-            13, // 左肘
-            23, // 左髋
-            25, // 左膝
-            27  // 左踝
+            11, 13, 23, 25, 27
     };
 
     private static final int[] RIGHT_SIDE_MAJOR_JOINTS = {
-            12, // 右肩
-            14, // 右肘
-            24, // 右髋
-            26, // 右膝
-            28  // 右踝
+            12, 14, 24, 26, 28
     };
 
-    // 距离比例和尺寸限制参数
     private float shoulderToHipEuclidRatio = 0.1f;
     private static final float MIN_DISTANCE_RATIO = 6f;
     private static final float MAX_DISTANCE_RATIO = 25f;
     private static final float MAX_LANDMARK_RADIUS = 60f;
     private static final float MAX_MAJOR_LANDMARK_RADIUS = 120f;
 
-
     public void setRotationDegrees(int degrees) {
         this.rotationDegrees = degrees % 360;
         invalidate();
     }
-    // 设置运动状态
+
     public void setTrackingState(boolean tracking) {
         this.isTracking = tracking;
         invalidate();
     }
+
     public void setFrontCamera(boolean front) {
         this.isFrontCamera = front;
+        invalidate();
+    }
+
+    // 新增：直接从SDK设置骨架数据
+    public void setDirectLandmarks(List<NormalizedLandmark> landmarks) {
+        this.directLandmarks = landmarks;
         invalidate();
     }
 
@@ -114,7 +108,6 @@ public class OverlayView extends View {
     }
 
     private void initPaints() {
-        // 实时姿态画笔
         landmarkPaint = new Paint();
         landmarkPaint.setColor(Color.RED);
         landmarkPaint.setStrokeWidth(LANDMARK_STROKE_WIDTH);
@@ -125,7 +118,6 @@ public class OverlayView extends View {
         connectionPaint.setStrokeWidth(CONNECTION_STROKE_WIDTH);
         connectionPaint.setStyle(Paint.Style.STROKE);
 
-        // 标准姿态画笔
         standardLandmarkPaint = new Paint();
         standardLandmarkPaint.setColor(Color.BLUE);
         standardLandmarkPaint.setStrokeWidth(LANDMARK_STROKE_WIDTH);
@@ -136,7 +128,6 @@ public class OverlayView extends View {
         standardConnectionPaint.setStrokeWidth(CONNECTION_STROKE_WIDTH);
         standardConnectionPaint.setStyle(Paint.Style.STROKE);
 
-        // 文本画笔
         textPaint = new Paint();
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(TEXT_SIZE);
@@ -160,7 +151,6 @@ public class OverlayView extends View {
         invalidate();
     }
 
-    // 设置标准姿态关键点
     public void setStandardPoseLandmarks(List<NormalizedLandmark> landmarks) {
         this.standardLandmarks = landmarks;
         this.drawStandardPose = (landmarks != null && !landmarks.isEmpty());
@@ -175,6 +165,7 @@ public class OverlayView extends View {
 
     public void clear() {
         this.poseResults = null;
+        this.directLandmarks = null;
         this.inferenceTime = 0;
         this.standardLandmarks = null;
         this.drawStandardPose = false;
@@ -190,23 +181,27 @@ public class OverlayView extends View {
             drawStandardPoseLandmarks(canvas);
         }
 
-        // 再绘制实时姿态（上层）
-        if (poseResults != null && !poseResults.landmarks().isEmpty()) {
+        // 绘制实时姿态 - 优先使用 directLandmarks（来自SDK）
+        if (directLandmarks != null && !directLandmarks.isEmpty()) {
+            drawDirectLandmarks(canvas, directLandmarks);
+            if (isTracking) {
+                drawSimilarityInfo(canvas);
+            }
+        }
+        // 兼容旧的 poseResults
+        else if (poseResults != null && !poseResults.landmarks().isEmpty()) {
             drawPoseLandmarks(canvas);
-            // 只有在运动状态时才显示相似度
             if (isTracking) {
                 drawSimilarityInfo(canvas);
             }
         }
     }
-    // 绘制标准姿态
+
     private void drawStandardPoseLandmarks(Canvas canvas) {
         canvas.save();
         applyTransformations(canvas);
-        // 绘制连接线
         drawPoseConnections(canvas, standardLandmarks, standardConnectionPaint);
 
-        // 绘制关键点
         for (int i : REQUIRED_LANDMARK_INDICES) {
             if (i < standardLandmarks.size()) {
                 NormalizedLandmark landmark = standardLandmarks.get(i);
@@ -220,10 +215,64 @@ public class OverlayView extends View {
                 }
             }
         }
+        canvas.restore();
+    }
+
+    private void drawDirectLandmarks(Canvas canvas, List<NormalizedLandmark> landmarks) {
+        if (landmarks == null || landmarks.isEmpty()) return;
+
+        canvas.save();
+        applyTransformations(canvas);
+
+        // 计算肩髋距离
+        if (landmarks.size() >= 33) {
+            NormalizedLandmark leftShoulder = landmarks.get(11);
+            NormalizedLandmark leftHip = landmarks.get(23);
+            if (leftShoulder != null && leftHip != null) {
+                float dist = (float) Math.sqrt(
+                        Math.pow(leftHip.x() - leftShoulder.x(), 2) +
+                                Math.pow(leftHip.y() - leftShoulder.y(), 2)
+                ) * 100;
+                shoulderToHipEuclidRatio = Math.max(dist, MIN_DISTANCE_RATIO);
+                shoulderToHipEuclidRatio = Math.min(shoulderToHipEuclidRatio, MAX_DISTANCE_RATIO);
+            }
+        }
+
+        int landmarkColor = getLandmarkColor(landmarks);
+        connectionPaint.setColor(landmarkColor);
+        landmarkPaint.setColor(landmarkColor);
+
+        // 绘制连接线
+        drawPoseConnections(canvas, landmarks, connectionPaint);
+
+        // 绘制关键点
+        for (int i : REQUIRED_LANDMARK_INDICES) {
+            if (i < landmarks.size()) {
+                NormalizedLandmark landmark = landmarks.get(i);
+                float visibility = landmark.visibility().orElse(0f);
+                if (visibility >= MIN_VISIBILITY_THRESHOLD) {
+                    float x = landmark.x() * getWidth();
+                    float y = landmark.y() * getHeight();
+
+                    float baseRadius = LANDMARK_STROKE_WIDTH;
+                    float radius = baseRadius * (shoulderToHipEuclidRatio / MIN_DISTANCE_RATIO) / 2;
+
+                    if (isMajorJoint(i)) {
+                        radius = radius * 2;
+                        radius = Math.min(radius, MAX_MAJOR_LANDMARK_RADIUS);
+                    } else {
+                        radius = Math.min(radius, MAX_LANDMARK_RADIUS);
+                    }
+
+                    canvas.drawCircle(x, y, radius, landmarkPaint);
+                }
+            }
+        }
+
+        canvas.restore();
     }
 
     private void drawSimilarityInfo(Canvas canvas) {
-        // 原有逻辑不变
         Paint similarityPaint = new Paint(largeTextPaint);
         similarityPaint.setColor(getSimilarityColor(similarityScore));
 
@@ -243,59 +292,37 @@ public class OverlayView extends View {
     }
 
     private int getSimilarityColor(float score) {
-        // 原有逻辑不变
         float hue = score * 120f;
-        return Color.HSVToColor(new float[]{
-                Math.min(hue, 120f),
-                0.9f,
-                0.9f
-        });
+        return Color.HSVToColor(new float[]{Math.min(hue, 120f), 0.9f, 0.9f});
     }
 
-    /**
-     * 检查单侧主要关键点可见性
-     */
     private boolean areMajorJointsVisible(List<NormalizedLandmark> landmarks, int[] jointIndices) {
-        if (landmarks == null || landmarks.size() < 33) {
-            return false;
-        }
-
+        if (landmarks == null || landmarks.size() < 33) return false;
         int visibleCount = 0;
         for (int index : jointIndices) {
             if (index < landmarks.size()) {
                 NormalizedLandmark landmark = landmarks.get(index);
                 if (landmark != null && landmark.visibility().isPresent() &&
-                        landmark.visibility().get() >= MIN_VISIBILITY_THRESHOLD &&
-                        landmark.x() >= 0 && landmark.x() <= 1 &&
-                        landmark.y() >= 0 && landmark.y() <= 1) {
+                        landmark.visibility().get() >= MIN_VISIBILITY_THRESHOLD) {
                     visibleCount++;
                 }
             }
         }
-
-        // 单侧所有主要关键点都可见才返回true
         return visibleCount == jointIndices.length;
     }
 
-    /**
-     * 获取关键点绘制颜色
-     */
     private int getLandmarkColor(List<NormalizedLandmark> landmarks) {
         boolean leftVisible = areMajorJointsVisible(landmarks, LEFT_SIDE_MAJOR_JOINTS);
         boolean rightVisible = areMajorJointsVisible(landmarks, RIGHT_SIDE_MAJOR_JOINTS);
-
         if (leftVisible && rightVisible) {
-            return Color.GREEN; // 双侧都可见 - 绿色
+            return Color.GREEN;
         } else if (leftVisible || rightVisible) {
-            return Color.YELLOW; // 单侧可见 - 黄色
+            return Color.YELLOW;
         } else {
-            return Color.RED; // 都不可见 - 红色
+            return Color.RED;
         }
     }
 
-    /**
-     * 检查是否为主要关节点
-     */
     private boolean isMajorJoint(int landmarkIndex) {
         for (int joint : LEFT_SIDE_MAJOR_JOINTS) {
             if (joint == landmarkIndex) return true;
@@ -306,22 +333,10 @@ public class OverlayView extends View {
         return false;
     }
 
-    /**
-     * 获取主要关节点的颜色
-     */
-    private int getMajorJointColor(int jointIndex, List<NormalizedLandmark> landmarks) {
-        int[] sideJoints = Arrays.stream(LEFT_SIDE_MAJOR_JOINTS).anyMatch(i -> i == jointIndex) ?
-                LEFT_SIDE_MAJOR_JOINTS : RIGHT_SIDE_MAJOR_JOINTS;
-
-        boolean sideVisible = areMajorJointsVisible(landmarks, sideJoints);
-        return sideVisible ? Color.GREEN : Color.RED;
-    }
-
     private void drawPoseLandmarks(Canvas canvas) {
         for (List<NormalizedLandmark> landmarks : poseResults.landmarks()) {
             if (landmarks == null || landmarks.isEmpty()) return;
 
-            // 计算肩到髋的欧氏距离
             if (landmarks.size() >= 33) {
                 NormalizedLandmark leftShoulder = landmarks.get(11);
                 NormalizedLandmark leftHip = landmarks.get(23);
@@ -332,124 +347,65 @@ public class OverlayView extends View {
                         Math.pow(leftHip.x() - leftShoulder.x(), 2) +
                                 Math.pow(leftHip.y() - leftShoulder.y(), 2)
                 ) * 100;
-
                 float rightDist = (float) Math.sqrt(
                         Math.pow(rightHip.x() - rightShoulder.x(), 2) +
                                 Math.pow(rightHip.y() - rightShoulder.y(), 2)
                 ) * 100;
-
                 shoulderToHipEuclidRatio = Math.max(leftDist, rightDist);
                 shoulderToHipEuclidRatio = Math.max(shoulderToHipEuclidRatio, MIN_DISTANCE_RATIO);
                 shoulderToHipEuclidRatio = Math.min(shoulderToHipEuclidRatio, MAX_DISTANCE_RATIO);
             }
 
-            // 检查全身可见性
-            boolean isFullBody = isFullBodyVisible(landmarks);
-
-            // 根据主要关键点可见性调整颜色
             int landmarkColor = getLandmarkColor(landmarks);
-            int connectionColor = landmarkColor;
-
+            connectionPaint.setColor(landmarkColor);
             landmarkPaint.setColor(landmarkColor);
-            connectionPaint.setColor(connectionColor);
 
-            // 应用变换
             canvas.save();
             applyTransformations(canvas);
-
-            // 先绘制连接线（
             drawPoseConnections(canvas, landmarks, connectionPaint);
 
-            // 绘制核心关键点
             for (int i : REQUIRED_LANDMARK_INDICES) {
                 if (i < landmarks.size()) {
                     NormalizedLandmark landmark = landmarks.get(i);
                     if (landmark.visibility().isPresent() && landmark.visibility().get() >= MIN_VISIBILITY_THRESHOLD) {
                         float x = landmark.x() * getWidth();
                         float y = landmark.y() * getHeight();
-
-                        // 动态计算半径
                         float baseRadius = LANDMARK_STROKE_WIDTH;
-                        float radius = baseRadius * (shoulderToHipEuclidRatio / MIN_DISTANCE_RATIO)/2;
-
-                        if (isMajorJoint(i)) {
-                            radius = radius * 2;
-                            radius = Math.min(radius, MAX_MAJOR_LANDMARK_RADIUS);
-                            landmarkPaint.setColor(getMajorJointColor(i, landmarks));
-                        } else {
-                            radius = Math.min(radius, MAX_LANDMARK_RADIUS);
-                            landmarkPaint.setColor(landmarkColor);
-                        }
-
+                        float radius = baseRadius * (shoulderToHipEuclidRatio / MIN_DISTANCE_RATIO) / 2;
+                        radius = Math.min(radius, isMajorJoint(i) ? MAX_MAJOR_LANDMARK_RADIUS : MAX_LANDMARK_RADIUS);
                         canvas.drawCircle(x, y, radius, landmarkPaint);
                     }
                 }
             }
-
             canvas.restore();
         }
     }
 
-    // 连接线绘制方法
     private void drawPoseConnections(Canvas canvas, List<NormalizedLandmark> landmarks, Paint paint) {
         if (landmarks == null || landmarks.isEmpty()) return;
-
         for (int[] connection : POSE_CONNECTIONS) {
             if (connection[0] < landmarks.size() && connection[1] < landmarks.size()) {
                 NormalizedLandmark start = landmarks.get(connection[0]);
                 NormalizedLandmark end = landmarks.get(connection[1]);
-
-                // 检查关键点可见性
-                boolean startVisible = start.visibility().isPresent() &&
-                        start.visibility().get() >= MIN_VISIBILITY_THRESHOLD;
-                boolean endVisible = end.visibility().isPresent() &&
-                        end.visibility().get() >= MIN_VISIBILITY_THRESHOLD;
-
+                boolean startVisible = start.visibility().isPresent() && start.visibility().get() >= MIN_VISIBILITY_THRESHOLD;
+                boolean endVisible = end.visibility().isPresent() && end.visibility().get() >= MIN_VISIBILITY_THRESHOLD;
                 if (startVisible && endVisible) {
                     float startX = start.x() * getWidth();
                     float startY = start.y() * getHeight();
                     float endX = end.x() * getWidth();
                     float endY = end.y() * getHeight();
-
-                    if (startX >= 0 && startX <= getWidth() && startY >= 0 && startY <= getHeight() &&
-                            endX >= 0 && endX <= getWidth() && endY >= 0 && endY <= getHeight()) {
-
-                        canvas.drawLine(startX, startY, endX, endY, paint);
-                    }
+                    canvas.drawLine(startX, startY, endX, endY, paint);
                 }
             }
         }
     }
 
     private void applyTransformations(Canvas canvas) {
-
         if (rotationDegrees != 0) {
             canvas.rotate(rotationDegrees, getWidth() / 2f, getHeight() / 2f);
         }
-
         if (isFrontCamera) {
             canvas.scale(-1, 1, getWidth() / 2f, getHeight() / 2f);
         }
-    }
-
-    private boolean isFullBodyVisible(List<NormalizedLandmark> landmarks) {
-        if (landmarks == null || landmarks.size() < 33) {
-            return false;
-        }
-
-        int visibleCount = 0;
-        for (int index : REQUIRED_LANDMARK_INDICES) {
-            if (index < landmarks.size()) {
-                NormalizedLandmark landmark = landmarks.get(index);
-                float visibility = landmark.visibility().orElse(0f);
-                if (landmark.x() >= 0 && landmark.x() <= 1 &&
-                        landmark.y() >= 0 && landmark.y() <= 1 &&
-                        visibility >= MIN_VISIBILITY_THRESHOLD) {
-                    visibleCount++;
-                }
-            }
-        }
-
-        return visibleCount >= REQUIRED_LANDMARK_INDICES.length;
     }
 }

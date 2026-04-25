@@ -194,13 +194,36 @@
                     android:layout_height="match_parent"
                     />
 
-                <!-- 骨骼点覆盖层 -->
-                <com.example.myapplication.OverlayView
-                    android:id="@+id/overlay"
+                <!--                &lt;!&ndash; 骨骼点覆盖层 &ndash;&gt;-->
+                <!--                <com.example.myapplication.OverlayView-->
+                <!--                    android:id="@+id/overlay"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="match_parent"-->
+                <!--                    />-->
+                <com.example.fitness.sdk.ui.PoseOverlayView
+                    android:id="@+id/poseOverlayView"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    />
+                    android:layout_height="match_parent" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:background="#CC000000"
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="8dp"
+                    android:orientation="horizontal"
+                    android:gravity="center">
 
+                    <TextView
+                        android:id="@+id/tvSimilarity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="相似度: 0%"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
                 <!-- 左上角信息面板 -->
                 <LinearLayout
                     android:layout_width="wrap_content"

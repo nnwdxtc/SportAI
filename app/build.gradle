@@ -70,7 +70,7 @@ dependencies {
     // MediaPipe
     implementation 'com.google.mediapipe:tasks-vision:0.10.11'
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
-    androidTestImplementation 'com.google.mediapipe:tasks-vision:latest.release'
+    //androidTestImplementation 'com.google.mediapipe:tasks-vision:latest.release'
     // Guava
     implementation 'com.google.guava:guava:31.1-android'
 
@@ -102,4 +102,5 @@ dependencies {
     // Markdown 渲染库
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'io.noties.markwon:ext-strikethrough:4.6.2'
+    implementation project(':fitness-sdk')
 }
