@@ -1,18 +1,29 @@
 package com.example.fitness.sdk.core;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.camera.view.PreviewView;
+import androidx.lifecycle.LifecycleOwner;
+
+import com.example.fitness.sdk.config.CameraConfig;
 import com.example.fitness.sdk.config.SDKConfig;
 import com.example.fitness.sdk.listener.FitnessSDKListener;
 import com.example.fitness.sdk.model.ActionData;
 import com.example.fitness.sdk.model.ErrorType;
 import com.example.fitness.sdk.model.Keypoint;
-import com.example.fitness.sdk.model.NormalizedLandmark;
 import com.example.fitness.sdk.model.SkeletonFrame;
 import com.example.fitness.sdk.ui.PoseOverlayView;
+import com.google.mediapipe.framework.image.BitmapImageBuilder;
+import com.google.mediapipe.framework.image.MPImage;
+import com.google.mediapipe.tasks.core.BaseOptions;
+import com.google.mediapipe.tasks.core.Delegate;
+import com.google.mediapipe.tasks.vision.core.RunningMode;
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker;
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +40,8 @@ public class FitnessEngineImpl implements FitnessEngine {
     private FitnessSDKListener listener;
     private ActionMatcher actionMatcher;
     private PoseOverlayView poseOverlayView;
+    private PoseLandmarker poseLandmarker;
+    private CameraManager cameraManager;
 
     private final AtomicBoolean isInitialized = new AtomicBoolean(false);
     private final AtomicBoolean isSessionActive = new AtomicBoolean(false);
@@ -36,18 +49,17 @@ public class FitnessEngineImpl implements FitnessEngine {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private long lastCallbackTime = 0;
-    private long callbackIntervalMs = 1000 / 30; // 30fps
+    private long callbackIntervalMs = 1000 / 30;
     private boolean isActionStarted = false;
+    private int currentImageWidth = 640;
+    private int currentImageHeight = 480;
 
     public void setContext(Context context) {
         this.context = context.getApplicationContext();
     }
 
-    @Override
-    public void attachOverlayView(Object overlayView) {
-        if (overlayView instanceof com.example.fitness.sdk.ui.PoseOverlayView) {
-            this.poseOverlayView = (com.example.fitness.sdk.ui.PoseOverlayView) overlayView;
-        }
+    public PoseOverlayView getPoseOverlayView() {
+        return poseOverlayView;
     }
 
     @Override
@@ -56,10 +68,13 @@ public class FitnessEngineImpl implements FitnessEngine {
         this.listener = listener;
         this.callbackIntervalMs = 1000 / Math.min(this.config.getCallbackFps(), 30);
 
+
+
         executorService.execute(() -> {
             try {
                 actionMatcher = new ActionMatcher();
                 setupActionMatcherListener();
+                initPoseLandmarker();
                 isInitialized.set(true);
                 notifyInitSuccess();
             } catch (Exception e) {
@@ -69,10 +84,40 @@ public class FitnessEngineImpl implements FitnessEngine {
         });
     }
 
+    private void initPoseLandmarker() {
+        try {
+            String modelPath = "pose_landmarker.task";
+            BaseOptions baseOptions = BaseOptions.builder()
+                    .setModelAssetPath(modelPath)
+                    .setDelegate(Delegate.CPU)
+                    .build();
+
+            PoseLandmarker.PoseLandmarkerOptions options =
+                    PoseLandmarker.PoseLandmarkerOptions.builder()
+                            .setBaseOptions(baseOptions)
+                            .setRunningMode(RunningMode.VIDEO)
+                            .build();
+
+            poseLandmarker = PoseLandmarker.createFromOptions(context, options);
+            Log.d(TAG, "MediaPipe 姿态检测器初始化成功");
+        } catch (Exception e) {
+            Log.e(TAG, "MediaPipe 初始化失败: " + e.getMessage(), e);
+            throw new RuntimeException("姿态检测初始化失败", e);
+        }
+    }
+
     @Override
     public void release() {
         isInitialized.set(false);
         isSessionActive.set(false);
+        if (cameraManager != null) {
+            cameraManager.release();
+            cameraManager = null;
+        }
+        if (poseLandmarker != null) {
+            poseLandmarker.close();
+            poseLandmarker = null;
+        }
         if (actionMatcher != null) {
             actionMatcher.reset();
             actionMatcher = null;
@@ -81,6 +126,100 @@ public class FitnessEngineImpl implements FitnessEngine {
         Log.d(TAG, "SDK已释放");
     }
 
+    @Override
+    public boolean openCamera(LifecycleOwner lifecycleOwner, PreviewView previewView, CameraConfig cameraConfig) {
+        if (cameraManager == null) {
+            cameraManager = new CameraManager(context, lifecycleOwner);
+        }
+        return cameraManager.openCamera(previewView, cameraConfig, this::processCameraFrame);
+    }
+
+    @Override
+    public void closeCamera() {
+        if (cameraManager != null) {
+            cameraManager.closeCamera();
+        }
+    }
+
+    private void processCameraFrame(Bitmap bitmap) {
+        if (!isSessionActive.get() || poseLandmarker == null) return;
+
+        try {
+            currentImageWidth = bitmap.getWidth();
+            currentImageHeight = bitmap.getHeight();
+
+            long timestampMs = System.currentTimeMillis();
+            MPImage mpImage = new BitmapImageBuilder(bitmap).build();
+            PoseLandmarkerResult result = poseLandmarker.detectForVideo(mpImage, timestampMs);
+
+            if (result != null && !result.landmarks().isEmpty()) {
+                processPoseResult(result);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "处理相机帧失败: " + e.getMessage(), e);
+        }
+    }
+
+    private void processPoseResult(PoseLandmarkerResult result) {
+        if (result == null || result.landmarks().isEmpty()) return;
+
+        List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark> mediapipeLandmarks = result.landmarks().get(0);
+
+        List<Keypoint> keypoints = new ArrayList<>();
+        for (int i = 0; i < mediapipeLandmarks.size() && i < 33; i++) {
+            com.google.mediapipe.tasks.components.containers.NormalizedLandmark lm = mediapipeLandmarks.get(i);
+            float visibility = lm.visibility().isPresent() ? lm.visibility().get() : 0f;
+            keypoints.add(new Keypoint(i, lm.x(), lm.y(), lm.z(), visibility));
+        }
+
+        float kneeAngle = calculateKneeAngle(keypoints, currentImageWidth, currentImageHeight);
+        float hipAngle = calculateHipAngle(keypoints, currentImageWidth, currentImageHeight);
+        float leftElbowAngle = calculateElbowAngle(keypoints, currentImageWidth, currentImageHeight, true);
+        float rightElbowAngle = calculateElbowAngle(keypoints, currentImageWidth, currentImageHeight, false);
+        float leftShoulderAngle = calculateShoulderAngle(keypoints, currentImageWidth, currentImageHeight, true);
+        float rightShoulderAngle = calculateShoulderAngle(keypoints, currentImageWidth, currentImageHeight, false);
+        float elbowAngle = (leftElbowAngle + rightElbowAngle) / 2;
+        float shoulderAngle = (leftShoulderAngle + rightShoulderAngle) / 2;
+
+        SkeletonFrame skeletonFrame = new SkeletonFrame.Builder()
+                .setTimestampMs(System.currentTimeMillis())
+                .setKeypoints(keypoints)
+                .setHasValidPose(true)
+                .setKneeAngle(kneeAngle)
+                .setHipAngle(hipAngle)
+                .setElbowAngle(elbowAngle)
+                .setShoulderAngle(shoulderAngle)
+                .setLeftElbowAngle(leftElbowAngle)
+                .setRightElbowAngle(rightElbowAngle)
+                .setLeftShoulderAngle(leftShoulderAngle)
+                .setRightShoulderAngle(rightShoulderAngle)
+                .build();
+
+        poseOverlayView.setSkeletonFrame(skeletonFrame);
+
+        if (actionMatcher != null) {
+            float similarity = actionMatcher.processFrame(skeletonFrame);
+            poseOverlayView.setSimilarityScore(similarity);
+
+            long now = System.currentTimeMillis();
+            if ((now - lastCallbackTime) >= callbackIntervalMs && listener != null) {
+                lastCallbackTime = now;
+                listener.onSkeletonFrame(null, keypoints);
+            }
+
+            if (similarity > 0.3f && !isActionStarted) {
+                isActionStarted = true;
+                if (listener != null) {
+                    listener.onActionStart(actionMatcher.getCurrentActionId());
+                }
+            } else if (similarity < 0.1f) {
+                isActionStarted = false;
+            }
+        }
+    }
+    public void setPoseOverlayView(PoseOverlayView overlayView) {
+        this.poseOverlayView = overlayView;
+    }
     @Override
     public void startSession() {
         if (!isInitialized.get()) {
@@ -120,92 +259,27 @@ public class FitnessEngineImpl implements FitnessEngine {
     }
 
     @Override
+    public void switchAction(ActionData actionData) {
+        if (actionData == null || actionMatcher == null) return;
+        executorService.execute(() -> {
+            actionMatcher.loadAction(actionData);
+            Log.d(TAG, "已切换动作: " + actionData.getActionName());
+            if (listener != null) {
+                listener.onActionSwitched(actionData.getActionId());
+            }
+        });
+    }
+
+    @Override
     public void resetCounter() {
         if (actionMatcher != null) {
             actionMatcher.resetCounter();
         }
     }
+
     @Override
     public String getCurrentActionId() {
         return actionMatcher != null ? actionMatcher.getCurrentActionId() : null;
-    }
-    @Override
-    public void updateLandmarks(List<NormalizedLandmark> landmarks, int imageWidth, int imageHeight) {
-        Log.d(TAG, "=== updateLandmarks 被调用 ===");
-
-        if (!isInitialized.get() || !isSessionActive.get()) {
-            Log.w(TAG, "updateLandmarks 跳过");
-            return;
-        }
-
-        if (landmarks == null || landmarks.isEmpty()) {
-            Log.w(TAG, "landmarks 为空");
-            return;
-        }
-
-        // 转换为 Keypoint
-        List<Keypoint> keypoints = new ArrayList<>();
-        for (int i = 0; i < landmarks.size() && i < 33; i++) {
-            NormalizedLandmark lm = landmarks.get(i);
-            keypoints.add(new Keypoint(i, lm.getX(), lm.getY(), lm.getZ(), lm.getVisibility()));
-        }
-
-        // 计算角度
-        float kneeAngle = calculateKneeAngle(keypoints, imageWidth, imageHeight);
-        float hipAngle = calculateHipAngle(keypoints, imageWidth, imageHeight);
-        float leftElbowAngle = calculateElbowAngle(keypoints, imageWidth, imageHeight, true);
-        float rightElbowAngle = calculateElbowAngle(keypoints, imageWidth, imageHeight, false);
-        float leftShoulderAngle = calculateShoulderAngle(keypoints, imageWidth, imageHeight, true);
-        float rightShoulderAngle = calculateShoulderAngle(keypoints, imageWidth, imageHeight, false);
-        float elbowAngle = (leftElbowAngle + rightElbowAngle) / 2;
-        float shoulderAngle = (leftShoulderAngle + rightShoulderAngle) / 2;
-
-        // 创建 SkeletonFrame
-        SkeletonFrame skeletonFrame = new SkeletonFrame.Builder()
-                .setTimestampMs(System.currentTimeMillis())
-                .setKeypoints(keypoints)
-                .setHasValidPose(true)
-                .setKneeAngle(kneeAngle)
-                .setHipAngle(hipAngle)
-                .setElbowAngle(elbowAngle)
-                .setShoulderAngle(shoulderAngle)
-                .setLeftElbowAngle(leftElbowAngle)
-                .setRightElbowAngle(rightElbowAngle)
-                .setLeftShoulderAngle(leftShoulderAngle)
-                .setRightShoulderAngle(rightShoulderAngle)
-                .build();
-
-        // 更新 SDK 骨架视图
-        if (poseOverlayView != null) {
-            poseOverlayView.setSkeletonFrame(skeletonFrame);
-        }
-
-        // ========== 关键：调用 ActionMatcher 并回调 ==========
-        if (actionMatcher != null) {
-            float similarity = actionMatcher.processFrame(skeletonFrame);
-            Log.d(TAG, "相似度结果: " + similarity);
-
-            if (poseOverlayView != null) {
-                poseOverlayView.setSimilarityScore(similarity);
-            }
-
-            // ========== 修改这里：传递 similarity 参数 ==========
-            if (listener != null) {
-                listener.onSkeletonFrame(null, skeletonFrame, similarity);
-            }
-
-            // 动作开始/完成回调
-            if (similarity > 0.3f && !isActionStarted) {
-                isActionStarted = true;
-                if (listener != null) {
-                    listener.onActionStart(actionMatcher.getCurrentActionId());
-                }
-            } else if (similarity < 0.1f) {
-                isActionStarted = false;
-            }
-        } else {
-            Log.e(TAG, "actionMatcher 为 null！");
-        }
     }
 
     // ========== 角度计算方法 ==========

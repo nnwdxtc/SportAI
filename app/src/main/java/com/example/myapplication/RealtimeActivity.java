@@ -835,8 +835,7 @@ public class RealtimeActivity extends AppCompatActivity implements FitnessSDKLis
 
 
     @Override
-    public void onSkeletonFrame(Bitmap frame, SkeletonFrame skeletonFrame, float similarity) {
-        // ...
+    public void onSkeletonFrame(Bitmap frame, List<Keypoint> keypoints) {
 
     }
 

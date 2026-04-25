@@ -2,13 +2,10 @@ package com.example.fitness.sdk.listener;
 
 import android.graphics.Bitmap;
 import com.example.fitness.sdk.model.ErrorType;
-import com.example.fitness.sdk.model.SkeletonFrame;
+import com.example.fitness.sdk.model.Keypoint;
 
 import java.util.List;
 
-/**
- * SDK回调接口
- */
 public interface FitnessSDKListener {
 
     void onInitSuccess(String sdkVersion);
@@ -17,11 +14,10 @@ public interface FitnessSDKListener {
 
     /**
      * 骨骼帧回调
-     * @param frame 原始相机帧
-     * @param skeletonFrame 骨骼数据
-     * @param similarity 当前相似度 (0-1)
+     * @param frame 原始相机帧（可为null）
+     * @param keypoints 关键点列表
      */
-    void onSkeletonFrame(Bitmap frame, SkeletonFrame skeletonFrame, float similarity);
+    void onSkeletonFrame(Bitmap frame, List<Keypoint> keypoints);
 
     void onActionStart(String actionId);
 

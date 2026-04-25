@@ -1,6 +1,10 @@
 package com.example.fitness.sdk;
 
 import android.content.Context;
+import android.view.ViewGroup;
+
+import androidx.camera.view.PreviewView;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.example.fitness.sdk.config.CameraConfig;
 import com.example.fitness.sdk.config.SDKConfig;
@@ -8,15 +12,8 @@ import com.example.fitness.sdk.core.FitnessEngine;
 import com.example.fitness.sdk.core.FitnessEngineImpl;
 import com.example.fitness.sdk.listener.FitnessSDKListener;
 import com.example.fitness.sdk.model.ActionData;
-import com.example.fitness.sdk.model.CameraFrame;
-import com.example.fitness.sdk.model.NormalizedLandmark;
 import com.example.fitness.sdk.ui.PoseOverlayView;
 
-import java.util.List;
-
-/**
- * 健身动作识别SDK对外入口（单例）
- */
 public class FitnessSDK {
 
     private static volatile FitnessSDK instance;
@@ -49,6 +46,16 @@ public class FitnessSDK {
         isInitialized = true;
     }
 
+    public boolean openCamera(LifecycleOwner lifecycleOwner, PreviewView previewView, CameraConfig cameraConfig) {
+        checkInitialized();
+        return engine.openCamera(lifecycleOwner, previewView, cameraConfig);
+    }
+
+    public void closeCamera() {
+        checkInitialized();
+        engine.closeCamera();
+    }
+
     public void startSession() {
         checkInitialized();
         engine.startSession();
@@ -64,16 +71,29 @@ public class FitnessSDK {
         engine.loadStandardAction(actionData);
     }
 
-    public void attachOverlayView(PoseOverlayView overlayView) {
+    public void switchAction(ActionData actionData) {
         checkInitialized();
-        if (engine instanceof FitnessEngineImpl) {
-            ((FitnessEngineImpl) engine).attachOverlayView(overlayView);
-        }
+        engine.switchAction(actionData);
     }
 
-    public void updateLandmarks(List<NormalizedLandmark> landmarks, int imageWidth, int imageHeight) {
+    public void resetCounter() {
         checkInitialized();
-        engine.updateLandmarks(landmarks, imageWidth, imageHeight);
+        engine.resetCounter();
+    }
+
+    public String getCurrentActionId() {
+        checkInitialized();
+        return engine.getCurrentActionId();
+    }
+
+    public boolean isSessionActive() {
+        checkInitialized();
+        return engine.isSessionActive();
+    }
+
+    public PoseOverlayView getPoseOverlayView() {
+        checkInitialized();
+        return ((FitnessEngineImpl) engine).getPoseOverlayView();
     }
 
     public void release() {
@@ -85,14 +105,13 @@ public class FitnessSDK {
         instance = null;
     }
 
-    public boolean isSessionActive() {
-        checkInitialized();
-        return engine.isSessionActive();
-    }
-
     private void checkInitialized() {
         if (!isInitialized || engine == null) {
             throw new IllegalStateException("SDK未初始化，请先调用 init()");
         }
+    }
+    public void setPoseOverlayView(PoseOverlayView overlayView) {
+        checkInitialized();
+        ((FitnessEngineImpl) engine).setPoseOverlayView(overlayView);
     }
 }

@@ -1,16 +1,13 @@
 package com.example.fitness.sdk.config;
 
-/**
- * SDK全局配置
- */
 public class SDKConfig {
-    private final float minDetectionConfidence;   // 最小检测置信度 (0-1)
-    private final float minTrackingConfidence;    // 最小跟踪置信度 (0-1)
-    private final int callbackFps;                // 回调频率 (帧/秒，最大30)
-    private final float angleHysteresis;          // 角度滞后阈值
-    private final long actionTimeoutMs;           // 动作超时时间（毫秒）
-    private final boolean enableAngleSmoothing;   // 是否启用角度平滑
-    private final int smoothingWindowSize;        // 平滑窗口大小
+    private final float minDetectionConfidence;
+    private final float minTrackingConfidence;
+    private final int callbackFps;
+    private final float angleHysteresis;
+    private final long actionTimeoutMs;
+    private final boolean enableAngleSmoothing;
+    private final int smoothingWindowSize;
 
     private SDKConfig(Builder builder) {
         this.minDetectionConfidence = builder.minDetectionConfidence;
@@ -22,7 +19,6 @@ public class SDKConfig {
         this.smoothingWindowSize = builder.smoothingWindowSize;
     }
 
-    // Getters
     public float getMinDetectionConfidence() { return minDetectionConfidence; }
     public float getMinTrackingConfidence() { return minTrackingConfidence; }
     public int getCallbackFps() { return callbackFps; }
