@@ -439,6 +439,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
     private void stopTracking() {
         isTracking = false;
         sdk.stopSession();
+        sdk.resetCounter();
         startButton.setText("开始运动");
     }
 

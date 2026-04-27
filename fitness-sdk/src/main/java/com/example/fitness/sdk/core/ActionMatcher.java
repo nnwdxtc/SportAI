@@ -13,12 +13,14 @@ public class ActionMatcher {
     private static final String TAG = "ActionMatcher";
     private static final int SMOOTHING_WINDOW = 5;
     private static final float SIMILARITY_THRESHOLD = 0.1f;
+    private static final float CORRECT_ACTION_THRESHOLD = 0.6f;  // 正确动作阈值
 
     private ActionData currentAction;
     private int standardFramePointer = 0;
-    private int completedCount = 0;
+    private int completedCount = 0;           // 正确动作次数
+    private float totalSimilaritySum = 0f;     // 所有正确动作的相似度总和
     private boolean isActionActive = false;
-    private long actionStartTime = 0;
+    private long currentActionStartTime = 0;   // 当前动作开始时间
     private final LinkedList<Float> similarityHistory = new LinkedList<>();
     private MatcherListener listener;
 
@@ -57,52 +59,86 @@ public class ActionMatcher {
     public void startSession() {
         reset();
         isActionActive = true;
-        actionStartTime = System.currentTimeMillis();
+        Log.d(TAG, "ActionMatcher 会话已开始");
     }
 
     public void stopSession() {
         isActionActive = false;
+        Log.d(TAG, "ActionMatcher 会话已停止");
     }
 
     public void reset() {
         standardFramePointer = 0;
         completedCount = 0;
+        totalSimilaritySum = 0f;
+        currentActionStartTime = 0;
         isActionActive = false;
         similarityHistory.clear();
     }
 
     public void resetCounter() {
         completedCount = 0;
+        totalSimilaritySum = 0f;
+        Log.d(TAG, "计数器已重置");
     }
 
     public float processFrame(SkeletonFrame realTimeFrame) {
-        Log.d(TAG, "processFrame 被调用, isActionActive=" + isActionActive
-                + ", currentAction=" + (currentAction != null)
-                + ", hasValidPose=" + (realTimeFrame != null && realTimeFrame.hasValidPose()));
-
         if (!isActionActive || currentAction == null) {
-            Log.w(TAG, "processFrame 跳过: isActionActive=" + isActionActive + ", currentAction=" + currentAction);
             return 0f;
         }
 
         if (!realTimeFrame.hasValidPose()) {
-            Log.w(TAG, "processFrame 跳过: 无效姿态");
             return 0f;
         }
 
         List<SkeletonFrame> standardFrames = currentAction.getFrames();
         if (standardFrames == null || standardFrames.isEmpty()) {
-            Log.w(TAG, "standardFrames 为空");
             return 0f;
         }
 
-
-        // 如果到达末尾，完成一次动作并重置指针
-        if (standardFramePointer >= standardFrames.size()) {
-            if (currentAction.isNeedCounting()) {
-                completeAction();
+        // 检测动作开始（第一帧或相似度首次超过阈值）
+        if (standardFramePointer == 0 && currentActionStartTime == 0) {
+            currentActionStartTime = System.currentTimeMillis();
+            if (listener != null) {
+                listener.onActionStart();
             }
-            standardFramePointer = 0;  // 重置指针，继续循环
+        }
+
+        if (standardFramePointer >= standardFrames.size()) {
+            // 完成一次动作周期
+            float avgSimilarity = calculateAverageSimilarity();
+            boolean isCorrect = avgSimilarity >= CORRECT_ACTION_THRESHOLD;
+
+            long durationMs = System.currentTimeMillis() - currentActionStartTime;
+            int score = (int) (avgSimilarity * 100);
+
+            if (isCorrect) {
+                // 正确动作：增加计数，累加相似度
+                completedCount++;
+                totalSimilaritySum += avgSimilarity;
+
+                // 计算所有动作的平均相似度
+                int overallScore = (int) ((totalSimilaritySum / completedCount) * 100);
+
+                if (listener != null) {
+                    listener.onActionComplete(overallScore, durationMs, completedCount);
+                }
+                Log.d(TAG, String.format("正确动作! 本次相似度:%.2f, 总次数:%d, 平均得分:%d",
+                        avgSimilarity, completedCount, overallScore));
+            } else {
+                // 错误动作：不增加计数，不累加相似度
+                int errorScore = (int) (avgSimilarity * 100);
+                if (listener != null) {
+                    listener.onActionError(errorScore, ErrorType.ANGLE_DEVIATION);
+                }
+                Log.d(TAG, String.format("错误动作! 本次相似度:%.2f, 不计入次数", avgSimilarity));
+            }
+
+            // 重置当前动作状态，准备下一次
+            standardFramePointer = 0;
+            currentActionStartTime = System.currentTimeMillis();
+            similarityHistory.clear();
+            return avgSimilarity;
         }
 
         SkeletonFrame standardFrame = standardFrames.get(standardFramePointer);
@@ -114,6 +150,15 @@ public class ActionMatcher {
         }
 
         return smoothed;
+    }
+
+    private float calculateAverageSimilarity() {
+        if (similarityHistory.isEmpty()) return 0f;
+        float sum = 0f;
+        for (float s : similarityHistory) {
+            sum += s;
+        }
+        return sum / similarityHistory.size();
     }
 
     private float calculateSimilarity(SkeletonFrame rt, SkeletonFrame std) {
@@ -160,36 +205,6 @@ public class ActionMatcher {
         float sum = 0f;
         for (float s : similarityHistory) sum += s;
         return similarityHistory.isEmpty() ? similarity : sum / similarityHistory.size();
-    }
-
-    private void completeAction() {
-        completedCount++;
-        long durationMs = System.currentTimeMillis() - actionStartTime;
-        int score = calculateScore();
-
-        // 重置开始时间用于下一次动作
-        actionStartTime = System.currentTimeMillis();
-
-        if (listener != null) {
-            if (score < 60) {
-                listener.onActionError(score, ErrorType.ANGLE_DEVIATION);
-            } else {
-                listener.onActionComplete(score, durationMs, completedCount);
-            }
-        }
-
-        Log.d(TAG, "动作完成! 次数=" + completedCount + ", 得分=" + score);
-    }
-
-    private int calculateScore() {
-        if (similarityHistory.isEmpty()) return 50;
-        float avg = 0f;
-        for (float s : similarityHistory) avg += s;
-        avg /= similarityHistory.size();
-        if (avg >= 0.85f) return 95;
-        if (avg >= 0.70f) return 80;
-        if (avg >= 0.50f) return 65;
-        return 50;
     }
 
     public String getCurrentActionId() {
