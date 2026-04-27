@@ -7,6 +7,7 @@ import com.example.fitness.sdk.config.CameraConfig;
 import com.example.fitness.sdk.config.SDKConfig;
 import com.example.fitness.sdk.listener.FitnessSDKListener;
 import com.example.fitness.sdk.model.ActionData;
+import com.example.fitness.sdk.model.CameraFrame;
 
 public interface FitnessEngine {
 
@@ -29,6 +30,6 @@ public interface FitnessEngine {
     void switchAction(ActionData actionData);
 
     void resetCounter();
-
+    void updateFrame(CameraFrame cameraFrame);
     String getCurrentActionId();
 }

@@ -12,7 +12,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,6 +30,7 @@ import com.example.fitness.sdk.config.CameraConfig;
 import com.example.fitness.sdk.config.SDKConfig;
 import com.example.fitness.sdk.listener.FitnessSDKListener;
 import com.example.fitness.sdk.model.ActionData;
+import com.example.fitness.sdk.model.ActionData.ActionConfig;
 import com.example.fitness.sdk.model.ErrorType;
 import com.example.fitness.sdk.model.Keypoint;
 import com.example.fitness.sdk.ui.PoseOverlayView;
@@ -49,7 +49,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDKListener {
 
@@ -76,6 +78,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
     private PixelPerfectOverlayView videoOverlayView;
     private Handler videoUpdateHandler;
     private Runnable videoUpdateRunnable;
+
     // 标准动作数据
     private final List<FrameData> standardVideoData = new ArrayList<>();
 
@@ -135,16 +138,18 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
         startButton.setOnClickListener(v -> toggleTracking());
 
         setupAngleDisplay();
+
         videoUpdateHandler = new Handler(Looper.getMainLooper());
         videoUpdateRunnable = () -> {
             if (player != null && player.isPlaying() && isStandardDataReady) {
                 updateVideoOverlay();
             }
             if (videoUpdateHandler != null) {
-                videoUpdateHandler.postDelayed(videoUpdateRunnable, 33); // 约30fps
+                videoUpdateHandler.postDelayed(videoUpdateRunnable, 33);
             }
         };
     }
+
     private void startVideoUpdateTimer() {
         if (videoUpdateHandler != null && videoUpdateRunnable != null) {
             videoUpdateHandler.removeCallbacks(videoUpdateRunnable);
@@ -159,6 +164,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             Log.d(TAG, "视频帧更新定时器已停止");
         }
     }
+
     private void setupAngleDisplay() {
         if (angleView != null) {
             angleView.setBackgroundColor(Color.argb(128, 0, 0, 0));
@@ -243,6 +249,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             }
         });
     }
+
     private void copyAssetsToCache() {
         String[] files = {"squat_standard.bin", "boxing_jab.bin", "boxing_hook.bin",
                 "boxing_swing.bin", "high_knees_standard.bin", "romanian_deadlift_standard.bin"};
@@ -270,6 +277,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             }
         }
     }
+
     private void setupVideoPlayer(Uri videoUri) {
         if (player != null) {
             player.release();
@@ -303,7 +311,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
                     exoPlayerView.post(() -> {
                         updateVideoDisplayRect();
                         updateVideoOverlay();
-                        startVideoUpdateTimer();  // 启动定时器
+                        startVideoUpdateTimer();
                     });
                 }
             }
@@ -371,16 +379,99 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             frames.add(frame);
         }
 
+        // 根据动作名称获取对应的配置
+        ActionConfig config = getActionConfigForName(actionName);
+
+        // 如果从标准视频数据中能获取到帧数信息，可以动态设置 minMatchedFrames
+        int expectedFrameCount = frames.size();
+        int minMatchedFrames = (int)(expectedFrameCount * 0.7f); // 至少匹配70%的帧
+
+        // 创建带配置的 ActionData
         ActionData actionData = new ActionData.Builder()
                 .setActionId(actionName.toLowerCase().replace(" ", "_"))
                 .setActionName(actionName)
                 .setFrames(frames)
                 .setFps(30f)
                 .setNeedCounting(needCounting)
+                .setConfig(config)
                 .build();
 
         sdk.loadStandardAction(actionData);
-        Log.d(TAG, "已加载标准动作，帧数: " + frames.size());
+        Log.d(TAG, "已加载标准动作，帧数: " + frames.size() + ", 最小匹配帧数: " + minMatchedFrames);
+    }
+
+    /**
+     * 根据动作名称获取对应的配置
+     */
+    private ActionConfig getActionConfigForName(String actionName) {
+        if (actionName.contains("拳击")) {
+            return new ActionConfig.Builder()
+                    .setWeights(createBoxingWeights())
+                    .setCompletionThreshold(0.55f)
+                    .setRhythmTolerance(0.4f)
+                    .setMinMatchedFrames(30)
+                    .setMinSimilarityThreshold(0.25f)
+                    .setScoringMode("average")
+                    .build();
+        } else if (actionName.contains("高抬腿")) {
+            return new ActionConfig.Builder()
+                    .setWeights(createHighKneesWeights())
+                    .setCompletionThreshold(0.65f)
+                    .setRhythmTolerance(0.25f)
+                    .setMinMatchedFrames(40)
+                    .setMinSimilarityThreshold(0.35f)
+                    .setScoringMode("average")
+                    .build();
+        } else if (actionName.contains("硬拉") || actionName.contains("罗马尼亚")) {
+            return new ActionConfig.Builder()
+                    .setWeights(createDeadliftWeights())
+                    .setCompletionThreshold(0.6f)
+                    .setRhythmTolerance(0.6f)
+                    .setMinMatchedFrames(50)
+                    .setMinSimilarityThreshold(0.3f)
+                    .setScoringMode("average")
+                    .build();
+        } else {
+            // 默认深蹲配置
+            return new ActionConfig.Builder()
+                    .setWeights(createSquatWeights())
+                    .setCompletionThreshold(0.5f)
+                    .setRhythmTolerance(0.8f)
+                    .setMinMatchedFrames(30)
+                    .setMinSimilarityThreshold(0.4f)
+                    .setScoringMode("average")
+                    .build();
+        }
+    }
+
+    private Map<String, Float> createSquatWeights() {
+        Map<String, Float> weights = new HashMap<>();
+        weights.put("knee", 0.5f);
+        weights.put("hip", 0.5f);
+        return weights;
+    }
+
+    private Map<String, Float> createBoxingWeights() {
+        Map<String, Float> weights = new HashMap<>();
+        weights.put("leftElbow", 0.3f);
+        weights.put("rightElbow", 0.3f);
+        weights.put("leftShoulder", 0.2f);
+        weights.put("rightShoulder", 0.2f);
+        return weights;
+    }
+
+    private Map<String, Float> createHighKneesWeights() {
+        Map<String, Float> weights = new HashMap<>();
+        weights.put("knee", 0.7f);
+        weights.put("hip", 0.3f);
+        return weights;
+    }
+
+    private Map<String, Float> createDeadliftWeights() {
+        Map<String, Float> weights = new HashMap<>();
+        weights.put("hip", 0.8f);
+        weights.put("knee", 0.2f);
+        return weights;
     }
 
     private void initPermissions() {
@@ -434,6 +525,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
 
         sdk.startSession();
         startButton.setText("停止运动");
+
     }
 
     private void stopTracking() {
@@ -441,14 +533,10 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
 
         sdk.stopSession();
         sdk.resetCounter();
-
         runOnUiThread(() -> {
             startButton.setText("开始运动");
             if (squatCountView != null && needCounting) {
                 squatCountView.setText(actionName + ": 0");
-            }
-            if (squatCountView != null && !needCounting) {
-                squatCountView.setText("");
             }
             currentCount = 0;
             currentSimilarity = 0f;
@@ -462,8 +550,6 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
         Log.d(TAG, "停止跟踪，动作类型：" + actionName);
     }
 
-
-
     // ========== FitnessSDKListener 回调 ==========
 
     @Override
@@ -474,7 +560,6 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
 
             poseOverlayView = findViewById(R.id.poseOverlayView);
             sdk.setPoseOverlayView(poseOverlayView);
-
 
             // 开启相机
             CameraConfig cameraConfig = CameraConfig.builder()
@@ -500,7 +585,6 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
 
     @Override
     public void onSkeletonFrame(Bitmap frame, List<Keypoint> keypoints) {
-        // SDK 已经自动绘制骨架，这里更新相似度和角度显示
         runOnUiThread(() -> {
             updateSimilarityDisplay(currentSimilarity);
 
@@ -511,18 +595,33 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
     }
 
     private void updateAngleDisplay(List<Keypoint> keypoints) {
+        // 从关键点中提取膝关节点计算角度
         float kneeAngle = 0;
+        float hipAngle = 0;
+
         for (Keypoint kp : keypoints) {
-            if (kp.getId() == 25) {
+            if (kp.getId() == 25) { // 左膝
+                // 需要三个点才能准确计算，这里简化
                 kneeAngle = kp.getY() * 180;
-                break;
+            }
+            if (kp.getId() == 23) { // 左髋
+                hipAngle = kp.getY() * 180;
             }
         }
 
         if ("拳击".equals(actionName)) {
-            angleView.setText(String.format("肘: %.0f°\n肩: %.0f°", kneeAngle, kneeAngle));
+            angleView.setText(String.format("肘: %.0f°\n肩: %.0f°", kneeAngle, hipAngle));
         } else {
-            angleView.setText(String.format("膝: %.0f°\n髋: %.0f°", kneeAngle, kneeAngle));
+            angleView.setText(String.format("膝: %.0f°\n髋: %.0f°", kneeAngle, hipAngle));
+        }
+
+        // 根据相似度设置角度显示颜色
+        if (currentSimilarity >= 0.8f) {
+            angleView.setTextColor(Color.GREEN);
+        } else if (currentSimilarity >= 0.6f) {
+            angleView.setTextColor(Color.YELLOW);
+        } else {
+            angleView.setTextColor(Color.RED);
         }
     }
 
@@ -532,6 +631,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             if (staticHintLayout != null) {
                 staticHintLayout.setVisibility(View.GONE);
             }
+            Log.d(TAG, "动作开始: " + actionId);
         });
     }
 
@@ -544,23 +644,31 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             if (squatCountView != null && needCounting) {
                 squatCountView.setText(actionName + ": " + completedCount);
             }
-            Toast.makeText(this, "动作完成! 得分:" + score, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "✅ 动作完成! 得分:" + score + " 次数:" + completedCount, Toast.LENGTH_SHORT).show();
+            Log.d(TAG, String.format("动作完成! 得分:%d, 次数:%d, 耗时:%.1fs", score, completedCount, durationMs / 1000.0));
         });
     }
 
     @Override
-    public void onActionError(int score, ErrorType errorType, Bitmap errorFrame, Bitmap correctFrameRef) {
+    public void onActionError(int score, ErrorType errorType, List<Bitmap> errorKeyFrames, Bitmap correctFrameRef) {
         currentSimilarity = score / 100f;
         runOnUiThread(() -> {
             updateSimilarityDisplay(currentSimilarity);
             if (staticHintLayout != null) {
                 staticHintLayout.setVisibility(View.VISIBLE);
+                // 显示具体错误信息
+                TextView hintDetail = staticHintLayout.findViewById(R.id.staticHintDetail);
+                if (hintDetail != null) {
+                    hintDetail.setText(errorType.getDescription());
+                }
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (staticHintLayout != null) {
                         staticHintLayout.setVisibility(View.GONE);
                     }
                 }, 2000);
             }
+            Toast.makeText(this, "❌ 动作错误: " + errorType.getDescription() + " 得分:" + score, Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "动作错误: " + errorType.getDescription() + ", 得分:" + score);
         });
     }
 
@@ -591,6 +699,7 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
             player.release();
         }
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {

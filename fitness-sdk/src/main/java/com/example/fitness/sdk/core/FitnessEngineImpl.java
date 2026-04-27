@@ -13,6 +13,7 @@ import com.example.fitness.sdk.config.CameraConfig;
 import com.example.fitness.sdk.config.SDKConfig;
 import com.example.fitness.sdk.listener.FitnessSDKListener;
 import com.example.fitness.sdk.model.ActionData;
+import com.example.fitness.sdk.model.CameraFrame;
 import com.example.fitness.sdk.model.ErrorType;
 import com.example.fitness.sdk.model.Keypoint;
 import com.example.fitness.sdk.model.SkeletonFrame;
@@ -73,6 +74,7 @@ public class FitnessEngineImpl implements FitnessEngine {
         executorService.execute(() -> {
             try {
                 actionMatcher = new ActionMatcher();
+                actionMatcher.setActionTimeout(this.config.getActionTimeoutMs());
                 setupActionMatcherListener();
                 initPoseLandmarker();
                 isInitialized.set(true);
@@ -217,6 +219,14 @@ public class FitnessEngineImpl implements FitnessEngine {
             }
         }
     }
+    @Override
+    public void updateFrame(CameraFrame cameraFrame) {
+        if (!isSessionActive.get() || poseLandmarker == null) return;
+        Bitmap bitmap = cameraFrame.getBitmap();
+        if (bitmap != null) {
+            processCameraFrame(bitmap);
+        }
+    }
     public void setPoseOverlayView(PoseOverlayView overlayView) {
         this.poseOverlayView = overlayView;
     }
@@ -359,20 +369,38 @@ public class FitnessEngineImpl implements FitnessEngine {
         actionMatcher.setListener(new ActionMatcher.MatcherListener() {
             @Override
             public void onActionStart() {
-                if (listener != null) listener.onActionStart(actionMatcher.getCurrentActionId());
+                if (listener != null) {
+                    listener.onActionStart(actionMatcher.getCurrentActionId());
+                }
             }
+
             @Override
             public void onActionComplete(int score, long durationMs, int completedCount) {
                 if (listener != null) {
-                    listener.onActionSuccess(score, durationMs, actionMatcher.getCurrentActionId(), completedCount);
+                    listener.onActionSuccess(score, durationMs,
+                            actionMatcher.getCurrentActionId(), completedCount);
                 }
             }
+
             @Override
-            public void onActionError(int score, ErrorType errorType) {
-                if (listener != null) listener.onActionError(score, errorType, null, null);
+            public void onActionError(int score, ErrorType errorType,
+                                      List<Bitmap> errorKeyFrames, Bitmap correctFrameRef) {
+                if (listener != null) {
+                    listener.onActionError(score, errorType, errorKeyFrames, correctFrameRef);
+                }
             }
+
             @Override
-            public void onSimilarityUpdate(float similarity, int matchedFrameIndex) {}
+            public void onSimilarityUpdate(float similarity, int matchedFrameIndex) {
+                // 可用于UI更新，暂不对外暴露
+            }
+
+            @Override
+            public void onActionTimeout() {
+                if (listener != null) {
+                    listener.onActionTimeout(actionMatcher.getCurrentActionId());
+                }
+            }
         });
     }
 

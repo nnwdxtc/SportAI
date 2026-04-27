@@ -12,6 +12,7 @@ import com.example.fitness.sdk.core.FitnessEngine;
 import com.example.fitness.sdk.core.FitnessEngineImpl;
 import com.example.fitness.sdk.listener.FitnessSDKListener;
 import com.example.fitness.sdk.model.ActionData;
+import com.example.fitness.sdk.model.CameraFrame;
 import com.example.fitness.sdk.ui.PoseOverlayView;
 
 public class FitnessSDK {
@@ -113,5 +114,9 @@ public class FitnessSDK {
     public void setPoseOverlayView(PoseOverlayView overlayView) {
         checkInitialized();
         ((FitnessEngineImpl) engine).setPoseOverlayView(overlayView);
+    }
+    public void updateFrame(CameraFrame cameraFrame) {
+        checkInitialized();
+        ((FitnessEngineImpl) engine).updateFrame(cameraFrame);
     }
 }
