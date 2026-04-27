@@ -101,7 +101,6 @@ public class SDKRealTimeActivity extends AppCompatActivity implements FitnessSDK
 
         setContentView(R.layout.activity_realtime);
 
-        // 复制 assets 中的 bin 文件到缓存目录
         copyAssetsToCache();
 
         initViews();
